@@ -11,9 +11,11 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 import com.esotericsoftware.yamlbeans.YamlReader;
+import com.esotericsoftware.yamlbeans.document.YamlElement;
 import com.google.gson.JsonElement;
 import com.hrznstudio.emojiful.api.Emoji;
 import com.hrznstudio.emojiful.api.EmojiCategory;
@@ -99,7 +101,25 @@ public class ClientEmojiHandler {
 
     private static void loadMisskeyEmojis() {
         try {
-            JsonElement body = CommonClass.readJsonFromUrl("https://gist.githubusercontent.com/ikasoba/44cc76fef216bd1cce6dcbc3d0664786/raw/ef56432bef64b460d971702f307426656bc1c2fa/emojis.json");
+            var aliases = new HashMap<String, ArrayList<String>>();
+
+            {
+                var list = (List<Map<String, String>>)CommonClass.readYamlFromUrl(
+                        "https://gist.githubusercontent.com/ikasoba/b365538a6f8e21a8028f5a1806dd7877/raw/aliases.yml");
+
+                for (var alias : list) {
+                    var aliasList = aliases.get(alias.get("name"));
+                    if (aliasList == null) {
+                        aliasList = new ArrayList<>();
+                    }
+
+                    aliasList.add(alias.get("alias"));
+
+                    aliases.put(alias.get("name"), aliasList);
+                }
+            }
+
+            JsonElement body = CommonClass.readJsonFromUrl("https://gist.githubusercontent.com/ikasoba/44cc76fef216bd1cce6dcbc3d0664786/raw/emojis.json");
             var emojis = body.getAsJsonObject().getAsJsonArray("emojis");
 
             var categories = new HashSet<String>();
@@ -123,6 +143,11 @@ public class ClientEmojiHandler {
                 emojifulEmoji.strings.add(":" + emojifulEmoji.name + ":");
                 emojifulEmoji.url      = emoji.get("url").getAsString();
                 emojifulEmoji.worldBased = false;
+
+                var aliasList = aliases.get(emojifulEmoji.name);
+                if (aliasList != null) {
+                    emojifulEmoji.strings.addAll(aliasList.stream().map(x -> ":" + x + ":").collect(Collectors.toList()));
+                }
 
                 Constants.EMOJI_LIST.add(emojifulEmoji);
 

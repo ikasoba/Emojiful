@@ -2,6 +2,7 @@ package com.hrznstudio.emojiful;
 
 import com.esotericsoftware.yamlbeans.YamlException;
 import com.esotericsoftware.yamlbeans.YamlReader;
+import com.esotericsoftware.yamlbeans.document.YamlElement;
 import com.google.common.collect.Lists;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonParser;
@@ -43,6 +44,12 @@ public class CommonClass {
         String jsonText = readStringFromURL(url);
         JsonElement json = new JsonParser().parse(jsonText);
         return json;
+    }
+
+    public static Object readYamlFromUrl(String url) throws YamlException {
+        var yml = new YamlReader( new StringReader( readStringFromURL(url) ) );
+        var body = yml.read();
+        return body;
     }
 
     public static void main(String[] s) {
