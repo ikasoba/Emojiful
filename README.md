@@ -1,5 +1,7 @@
 # Emojiful + みすてむず
 
+forked from [InnovativeOnlineIndustries/Emojiful](https://github.com/InnovativeOnlineIndustries/Emojiful/tree/1.20).
+
 ![Emojiful Logo](src/main/resources/assets/emojiful/logo.png)
 
 ![Emojiful Demo](src/main/resources/assets/emojiful/demo.gif)
