@@ -153,7 +153,9 @@ public class Emoji implements Predicate<String> {
                 try {
                     DownloadImageData imageData = new DownloadImageData(ImageIO.read(cache), loading_texture);
                     ResourceLocation resourceLocation = new ResourceLocation(Constants.MOD_ID, "texures/emoji/" + name.toLowerCase().replaceAll("[^a-z0-9/._-]", "") + "_" + version);
-                    Minecraft.getInstance().getTextureManager().register(resourceLocation, imageData);
+                    Minecraft.getInstance().executeBlocking(() -> {
+                        Minecraft.getInstance().getTextureManager().register(resourceLocation, imageData);
+                    });
                     img.add(imageData);
                     frames.add(resourceLocation);
                     this.finishedLoading = true;
@@ -192,6 +194,8 @@ public class Emoji implements Predicate<String> {
     }
 
     protected void loadTextureFromServer() {
+        Constants.LOG.info(getUrl());
+
         this.imageThread = new Thread("Emojiful Texture Downloader #" + threadDownloadCounter.incrementAndGet()) {
             @Override
             public void run() {

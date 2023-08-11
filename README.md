@@ -1,4 +1,4 @@
-# Emojiful
+# Emojiful + みすてむず
 
 ![Emojiful Logo](src/main/resources/assets/emojiful/logo.png)
 

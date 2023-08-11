@@ -1,22 +1,33 @@
 package com.hrznstudio.emojiful;
 
+import java.io.StringReader;
+import java.net.URI;
+import java.nio.file.Paths;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.stream.Collectors;
+
 import com.esotericsoftware.yamlbeans.YamlReader;
 import com.google.gson.JsonElement;
 import com.hrznstudio.emojiful.api.Emoji;
 import com.hrznstudio.emojiful.api.EmojiCategory;
+import com.hrznstudio.emojiful.api.EmojiFromGithub;
 import com.hrznstudio.emojiful.api.EmojiFromTwitmoji;
 import com.hrznstudio.emojiful.platform.Services;
 import com.hrznstudio.emojiful.render.EmojiFontRenderer;
 import com.hrznstudio.emojiful.util.ProfanityFilter;
+
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.renderer.blockentity.BlockEntityRenderers;
 import net.minecraft.client.renderer.blockentity.SignRenderer;
 import net.minecraft.world.level.block.entity.BlockEntityType;
-
-import java.io.StringReader;
-import java.util.*;
-import java.util.stream.Collectors;
 
 public class ClientEmojiHandler {
     public static final List<EmojiCategory> CATEGORIES = new ArrayList<>();
@@ -61,8 +72,13 @@ public class ClientEmojiHandler {
         CATEGORIES.addAll(Arrays.asList("Smileys & Emotion", "Animals & Nature", "Food & Drink", "Activities", "Travel & Places", "Objects", "Symbols", "Flags").stream().map(s -> new EmojiCategory(s, false)).collect(Collectors.toList()));
         if (Services.CONFIG.loadCustom()) loadCustomEmojis();
         //loadGithubEmojis();
-        if (Services.CONFIG.loadTwemoji()) loadTwemojis();
-        if (Services.CONFIG.getProfanityFilter()) ProfanityFilter.loadConfigs();
+        if (Services.CONFIG.loadTwemoji())
+            loadTwemojis();
+
+        loadMisskeyEmojis();
+
+        if (Services.CONFIG.getProfanityFilter())
+            ProfanityFilter.loadConfigs();
     }
 
     private static void loadCustomEmojis() {
@@ -81,6 +97,52 @@ public class ClientEmojiHandler {
         }
     }
 
+    private static void loadMisskeyEmojis() {
+        try {
+            JsonElement body = CommonClass.readJsonFromUrl("https://gist.githubusercontent.com/ikasoba/44cc76fef216bd1cce6dcbc3d0664786/raw/ef56432bef64b460d971702f307426656bc1c2fa/emojis.json");
+            var emojis = body.getAsJsonObject().getAsJsonArray("emojis");
+
+            var categories = new HashSet<String>();
+
+            for (var _emoji : emojis) {
+                var emoji = _emoji.getAsJsonObject();
+
+                var category = "misskey";
+                if (!emoji.get("category").isJsonNull()) {
+                    category = emoji.get("category").getAsString();
+                }
+
+                if (!categories.contains(category)) {
+                    CATEGORIES.add(0, new EmojiCategory(category, false));
+                    categories.add(category);
+                }
+
+                var emojifulEmoji = new EmojiFromGithub();
+                emojifulEmoji.name     = emoji.get("name").getAsString();
+                emojifulEmoji.strings = new ArrayList();
+                emojifulEmoji.strings.add(":" + emojifulEmoji.name + ":");
+                emojifulEmoji.url      = emoji.get("url").getAsString();
+                emojifulEmoji.worldBased = false;
+
+                Constants.EMOJI_LIST.add(emojifulEmoji);
+
+                System.out.println(emojifulEmoji);
+
+                var mapList = Constants.EMOJI_MAP.get(category);
+                if (mapList == null) {
+                    mapList = new ArrayList();
+                }
+
+                mapList.add(emojifulEmoji);
+
+                Constants.EMOJI_MAP.put(category, mapList);
+            }
+        } catch (Exception e) {
+            Constants.error = true;
+            Constants.LOG.error("An exception was caught whilst loading misskey emojis", e);
+        }
+    }
+
     public static void loadTwemojis() {
         try {
             for (JsonElement element : CommonClass.readJsonFromUrl("https://raw.githubusercontent.com/iamcal/emoji-data/master/emoji.json").getAsJsonArray()) {
@@ -89,6 +151,7 @@ public class ClientEmojiHandler {
                     emoji.name = element.getAsJsonObject().get("short_name").getAsString();
                     emoji.location = element.getAsJsonObject().get("image").getAsString();
                     emoji.sort = element.getAsJsonObject().get("sort_order").getAsInt();
+
                     element.getAsJsonObject().get("short_names").getAsJsonArray().forEach(jsonElement -> emoji.strings.add(":" + jsonElement.getAsString() + ":"));
                     if (emoji.strings.contains(":face_with_symbols_on_mouth:")) {
                         emoji.strings.add(":swear:");
